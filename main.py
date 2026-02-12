@@ -95,13 +95,11 @@ async def predict(file: UploadFile = File(...)):
         img_size = tuple(feature_dimensions['img_size'])
         img_gray = preprocess_image(contents, target_size=img_size)
         
-        # Extract features (HOG+Sobel, LBP)
         features_dict = extract_fusion_features(img_gray)
-        hog_sobel_features = features_dict['hog_sobel']
+        hog_features = features_dict['hog']
         lbp_features = features_dict['lbp']
         
-        # Fusion: concatenate HOG+Sobel dengan LBP (sama seperti notebook)
-        fusion_features = np.concatenate([hog_sobel_features, lbp_features])
+        fusion_features = np.concatenate([hog_features, lbp_features])
         
         # Reshape untuk single prediction
         fusion_features = fusion_features.reshape(1, -1)
@@ -124,7 +122,7 @@ async def predict(file: UploadFile = File(...)):
         prediction = svm_model.predict(pca_features)[0]
         
         # Convert numpy types to Python native types
-        prediction = int(prediction)
+        prediction = int(prediction)  # numpy.int64 -> int
         
         # Get probability/confidence (jika SVM pakai probability=True)
         try:
@@ -135,7 +133,7 @@ async def predict(file: UploadFile = File(...)):
             top_3_idx = np.argsort(probabilities)[::-1][:3]
             top_3_predictions = [
                 {
-                    "class": str(model_info['classes'][int(idx)]),
+                    "class": str(model_info['classes'][int(idx)]),  # Ensure string
                     "confidence": float(probabilities[idx])
                 }
                 for idx in top_3_idx

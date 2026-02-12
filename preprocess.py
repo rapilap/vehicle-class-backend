@@ -9,13 +9,11 @@ def preprocess_image(image_bytes, target_size=(128, 128)):
     
     if image.mode != 'RGB':
         image = image.convert('RGB')
-
     img_array = np.array(image)
     img_bgr = cv2.cvtColor(img_array, cv2.COLOR_RGB2BGR)
     img_resized = cv2.resize(img_bgr, target_size)
     img_noise = cv2.GaussianBlur(img_resized, (5, 5), 0)
     img_normalized = img_noise.astype('float32') / 255.0
-
     img_denorm = (img_normalized * 255).astype('uint8')
     gray_img = cv2.cvtColor(img_denorm, cv2.COLOR_BGR2GRAY)
     
@@ -33,27 +31,6 @@ def extract_hog(image):
         feature_vector=True
     )
     return features
-
-def extract_sobel_features(image):
-    # Convert float image (0-1) ke uint8 (0-255) untuk Sobel
-    if image.dtype == np.float32 or image.dtype == np.float64:
-        image_uint8 = (image * 255).astype(np.uint8)
-    else:
-        image_uint8 = image
-    
-    # Sobel X dan Y
-    sobelx = cv2.Sobel(image_uint8, cv2.CV_64F, 1, 0, ksize=3)
-    sobely = cv2.Sobel(image_uint8, cv2.CV_64F, 0, 1, ksize=3)
-    
-    # Magnitude (gabungan X dan Y)
-    sobel_mag = np.sqrt(sobelx**2 + sobely**2)
-    sobel_mag = np.uint8(np.clip(sobel_mag, 0, 255))
-    
-    # Histogram
-    sobel_hist = cv2.calcHist([sobel_mag], [0], None, [32], [0, 256])
-    sobel_hist = cv2.normalize(sobel_hist, sobel_hist).flatten()
-    
-    return sobel_hist
 
 def extract_lbp(image):
     # Convert float image (0-1) ke uint8 (0-255) untuk LBP
@@ -81,15 +58,11 @@ def extract_lbp(image):
     
     return lbp_hist
 
-
-def extract_fusion_features(image, max_length=None):
+def extract_fusion_features(image):
     hog_features = extract_hog(image)
-    sobel_features = extract_sobel_features(image)
     lbp_features = extract_lbp(image)
     
-    hog_sobel = np.concatenate([hog_features, sobel_features])
-    
     return {
-        'hog_sobel': hog_sobel,
+        'hog': hog_features,
         'lbp': lbp_features
     }
